@@ -1,0 +1,660 @@
+{
+  "name": "email scadualing with voice",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger1').item.json.message.text }}",
+        "options": {
+          "systemMessage": "=You are an AI Scheduling and Communication Assistant designed to automate meeting\ncoordination and email communication.\nYour role is to understand user requests, determine the user's intent, and perform the\nappropriate action using the available tools.\nCurrent system date and time: {{ $now }}\n\nPRIMARY OBJECTIVE\nYour goal is to assist users by automatically scheduling meetings and notifying participants by\nemail using the available tools.ssistant\n\n\nTimezone Setting: Use 'Asia/Amman' (GMT+3) for all calendar operations. Do NOT ask the user about their timezone. Format all times in 12-hour format (AM/PM) without mentioning 'GMT+3' in the conversation unless\n\nCORE RESPONSIBILITIES\n• Understand user requests related to meetings, contacts, or communication.\n• Extract key information such as names, dates, times, and requested\nactions.\n• Use the appropriate tools to complete the task.\n• Respond clearly and confirm completed actions only AFTER the required tools have\nsuccessfully executed.\n\nAVAILABLE TOOLS\nYou have access to the following tools:\n1. Email_Lookup\nUsed to retrieve contact information (such as email addresses) from the contacts\ndatabase or Google Sheet.\n2. Create an Event in Google Calendar\nUsed to schedule meetings and events.\nThe tool Calendar returns a JSON object. You must look for the key 'hangoutLink' inside this object. This is the official Google Meet URL. Use its value to replace [hangoutLink] in your message\n3. Send a Message in Gmail\nUsed to send email messages.\n4.Get_Calendar_Events: Checks for existing meetings in a specific time range.\n5.Add_New_Contact: Used to save a new contact (Name and Email) into the Google Sheet database. Use this ONLY when the user provides a missing email that was not found during the lookup.\n\nMEETING SCHEDULING RULE\nWhenever a user asks to schedule or set a meeting, you MUST perform ALL of the following\nsteps automatically:\nStep 1: Data Extraction: Extract [Name], [Date], and [Time]. Convert natural language (e.g., \"tomorrow at 2pm\") into a structured format based on {{ $now }}.\nKeep asking: \"Is there anything else to add (Agenda, Attachments, or specific Room) before I confirm and send the invitation?\"\n\nStep 2: Conflict Check (Mandatory): Use [Get_Calendar_Events] for the requested time slot.\n\nIf a meeting already exists: STOP. Inform the user  that there is a conflict at this time and ask for an alternative.\nIf the slot is free: Proceed to Step 3.\n\nStep 3: Recipient Discovery & Database Update:\nUse Email_Lookup to find the email.\n\nIf the email is missing, ask the user.\nOnce the user provides the email, you MUST use the Add_New_Contact tool to save the name and email into the Google Sheet before proceeding to schedule. This ensures the database is always updated.\n\nStep 4: Execution: 1. Create the event using [Create an Event in Google Calendar].\n2. Send a confirmation email via [Send a message in Gmail] automatically (even if not explicitly asked).\nThis notification email MUST always be sent when a meeting is scheduled, even if the user did\nnot explicitly ask for an email.\nNever skip the email notification step.\n\n\n\nINFORMATION PROCESSING\n\n• Carefully analyze the user's intent before taking any action.\n• If required information is missing (such as time or date), ask the user for clarification.\n• Do not guess missing information.\n• No Guessing: If the time, date, or recipient name is    missing, ask the user  for clarification before using any tool.\n\n•Confirmation Chain: Only confirm the action to the user after both the Calendar event is created AND the Email is sent.\n\n**GOOGLE MEET PROTOCOL:**\n1. When creating a meeting, ALWAYS enable 'Conference Data' to generate a Google Meet link.\n2. Once the event is created, extract the 'hangoutLink' (Google Meet URL).\n3. Include this link clearly in the confirmation message/email sent to the user/attendee.\n   - Example: \"the link (Google Meet): [Link]\"\n\n\nBEHAVIOR GUIDELINES\n• Be concise and professional.\n• Focus on completing the user's requested task.\n• Avoid unnecessary explanations unless requested.\n• Conflict Handling: If a slot is busy, say: \"Sorry, you have another appointment at this time. Shall we choose another appointment?\"\n• Language Protocol:\nAlways respond to the user in the same language they used in their message. If the user speaks Arabic, respond in Arabic. If the user speaks English, respond in English. Maintain this consistency throughout the conversation.\n Behavioral Rules: Never mention technical offsets like GMT+3 in your chat response. Use natural language like 'today at 7:00 PM '.\n\nOUTPUT INSTRUCTIONS\n• Confirm that the meeting was scheduled.\n• Confirm that the email notification was sent.\n• Only confirm actions after the required tools have executed\nsuccessfully. Example confirmation:\n\"The meeting with EMAN has been scheduled for Thursday at 7 PM. An email notification has\nbeen sent to EMAN.\"\n\nSAFETY RULES\n• Never invent contact information.\n• Always retrieve contact data using the \"Get Contacts\" tool before sending emails.\n• Never confirm an action unless the required tools have successfully executed.\n\n\nEMAIL CONTENT GUIDELINES\nThe email should clearly inform the participant about the meeting.\nInclude:\n• Meeting title or subject\n• Date\n• Time\nEMAIL FORMATTING GUIDELINES (To make it look professional)\nYour email body MUST be valid HTML. Use <br> for every new line and <b> for bold text. If you send plain text, it will fail to format.\nThe email body sent via Gmail should be formatted using clear lines and professional spacing. Use the following structure:\nSend the email body using this exact HTML structure to ensure clear line breaks:\n\nHello [Recipient Name],<br><br>\n\nYou have a new meeting scheduled. Here are the details:<br><br>\n\n🗓 <b>Date:</b> [Date]<br>\n⏰ <b>Time:</b> [Time]<br>\n📌 <b>Subject:</b> [Meeting Title]<br><br>\n🎥 <b>Meeting Link:</b> <a href=\"[hangoutLink]\">[hangoutLink]</a><br>\n\nBest regards,<br>\nYour Scheduling Assistant"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        544,
+        96
+      ],
+      "id": "559ce2b9-356d-470b-b77c-ecf8d2b198de",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "= {{ $json.message.chat.id.toString() }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        384
+      ],
+      "id": "1ad7f589-8aa5-4687-8266-86516463ffd7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "emailType": "text",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        384
+      ],
+      "id": "02a215f5-14e6-4565-931d-4577a539fb03",
+      "name": "Send a message in Gmail",
+      "webhookId": "6dc87e68-0f36-41bc-87a2-acaea01c4a17",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UJXGh3mQvHucao95",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "=\n{{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        96
+      ],
+      "id": "d96d4d4d-a2e8-4250-8060-0048041d47ab",
+      "name": "Send a text message",
+      "webhookId": "1f043170-8d0b-41c6-b7e7-520defbf6a3f",
+      "credentials": {
+        "telegramApi": {
+          "id": "7llHT7QMD7iVDnnB",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_CigdhQAppcbf1EB3aW0TuwyyLX8cx7EqASo0d8t928",
+          "mode": "list",
+          "cachedResultName": "test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_CigdhQAppcbf1EB3aW0TuwyyLX8cx7EqASo0d8t928/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_CigdhQAppcbf1EB3aW0TuwyyLX8cx7EqASo0d8t928/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        384
+      ],
+      "id": "69121e0a-a9ef-4ed4-9bcb-f25c862c7f87",
+      "name": "Email_Lookup",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CB70sT4G18IgoU33",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1024,
+        128
+      ],
+      "id": "28ba76ac-4ac9-4a00-99e4-795e86170cfa",
+      "name": "Telegram Trigger1",
+      "webhookId": "782ada6e-2d3d-4e86-bc57-92008ae9e0b6",
+      "credentials": {
+        "telegramApi": {
+          "id": "7llHT7QMD7iVDnnB",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "amona6948834@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amona6948834@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "useDefaultReminders": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Use_Default_Reminders', ``, 'boolean') }}",
+        "additionalFields": {
+          "conferenceDataUi": {
+            "conferenceDataValues": {
+              "conferenceSolution": "hangoutsMeet"
+            }
+          },
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Location', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        384
+      ],
+      "id": "3df4d96d-a435-4d35-b556-bed8d06f105f",
+      "name": "Create an Event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ecLhnil3QusT7wYo",
+          "name": "Google Calendar OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "amona6948834@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amona6948834@gmail.com"
+        },
+        "limit": 1,
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        384
+      ],
+      "id": "ee5be09b-0c0e-4978-9ec9-e447c4f81083",
+      "name": "Get many events in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ecLhnil3QusT7wYo",
+          "name": "Google Calendar OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1_CigdhQAppcbf1EB3aW0TuwyyLX8cx7EqASo0d8t928",
+          "mode": "list",
+          "cachedResultName": "test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_CigdhQAppcbf1EB3aW0TuwyyLX8cx7EqASo0d8t928/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_CigdhQAppcbf1EB3aW0TuwyyLX8cx7EqASo0d8t928/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('name', ``, 'string') }}",
+            "email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('email', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1088,
+        384
+      ],
+      "id": "1253db7f-ac14-48a2-b1c9-1b67e9f716b8",
+      "name": "Add_New_Contact",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CB70sT4G18IgoU33",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8d4b916c-d38a-455f-a10a-0c8e440bfe67",
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -528,
+        112
+      ],
+      "id": "ebe17783-9b83-49a7-aa00-95eff2f91dcf",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e4145e69-b00c-43dc-bf65-7647a862fbe4",
+              "name": "text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        -224
+      ],
+      "id": "658c5a01-f25c-4db7-8b85-fe8793c0d18b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        192
+      ],
+      "id": "8b64ceca-2930-497a-ab80-7d8914053c35",
+      "name": "Telegram",
+      "webhookId": "52f4d0ed-5036-4014-bdcd-8ff723ddfb33",
+      "credentials": {
+        "telegramApi": {
+          "id": "7llHT7QMD7iVDnnB",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        0,
+        192
+      ],
+      "id": "6f96d003-f73a-470e-aaec-56673644a4d5",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "HYTIdVPyPaifVYtP",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        192,
+        384
+      ],
+      "id": "9014d153-dbab-428d-bd8d-3163a706d4d2",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "HYTIdVPyPaifVYtP",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ddb046ec-97e3-4d8c-b120-c048b6be882c",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": 5128764418,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "29681faa-fdfe-44e3-b214-c5fd05077042",
+              "leftValue": "={{ $json.message.from.first_name }}",
+              "rightValue": "EMAN~",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -816,
+        128
+      ],
+      "id": "fac3b255-6d5c-48ff-86f1-26f6c2a8de5b",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        384
+      ],
+      "id": "dd19742b-fd7c-4716-8713-4bda423810e7",
+      "name": "No Operation, do nothing"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email_Lookup": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an Event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add_New_Contact": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        []
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f55d93c1-81ec-4604-ae35-23b40227e787",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a113e4fed15717e95d3c55afc18f083206fd7710646267e0bb88450f5c53ef56"
+  },
+  "id": "Vuzqi5CkGhXftql4",
+  "tags": []
+}

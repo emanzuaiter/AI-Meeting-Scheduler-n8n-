@@ -4,7 +4,7 @@ An **n8n workflow** that turns Telegram into a smart scheduling assistant. Send 
 
 ## 🎥 Demo
 
-> 📺 **Demo video:** [PASTE YOUR DEMO LINK HERE]([#](https://drive.google.com/file/d/1cEEJDswu60tfZs80zaEsQTSJ8N3OLf6S/view?usp=drive_link))
+> 📺 **Demo video:** [PASTE YOUR DEMO LINK HERE](https://drive.google.com/file/d/1cEEJDswu60tfZs80zaEsQTSJ8N3OLf6S/view?usp=drive_link)
 
 ## ✨ Features
 
